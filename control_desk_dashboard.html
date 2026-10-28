@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Control Desk - Painel Operacional</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js para Gráficos Operacionais -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Configurações do Tailwind -->
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            400: '#60a5fa',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                            950: '#0f172a'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+            color: #f1f5f9;
+        }
+        /* Efeito Glassmorphism em tom Azul */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.75);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(37, 99, 235, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+        }
+        .glass-card:hover {
+            border-color: rgba(37, 99, 235, 0.4);
+            box-shadow: 0 10px 30px -10px rgba(37, 99, 235, 0.3);
+        }
+        .blue-glow {
+            box-shadow: 0 0 15px rgba(37, 99, 235, 0.35);
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0b0f19;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e3a8a;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2563eb;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased">
+
+    <!-- Top Navigation / Header -->
+    <header class="glass-card sticky top-0 z-50 border-b border-brand-600/20 px-6 py-4 flex flex-wrap items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="p-2.5 bg-brand-600/20 border border-brand-500/30 rounded-xl blue-glow text-brand-400">
+                <i class="fa-solid fa-headset text-2xl"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-bold bg-gradient-to-r from-blue-400 via-brand-500 to-indigo-400 bg-clip-text text-transparent">
+                    Control Desk
+                </h1>
+                <p class="text-xs text-slate-400">Gestão Operacional & Monitoramento em Tempo Real</p>
+            </div>
+        </div>
+
+        <!-- Indicador de Status Operacional e Relógio -->
+        <div class="flex items-center gap-6">
+            <div class="hidden md:flex items-center gap-2 bg-emerald-950/40 border border-emerald-500/30 px-3 py-1.5 rounded-full text-xs text-emerald-400">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                Operação Normal (SLA OK)
+            </div>
+
+            <div class="text-right">
+                <div id="live-clock" class="text-lg font-mono font-semibold text-brand-400">00:00:00</div>
+                <div class="text-[10px] text-slate-400 uppercase tracking-wider">Atualizado agora</div>
+            </div>
+
+            <button onclick="refreshData()" class="p-2.5 bg-brand-600 hover:bg-brand-700 text-white rounded-lg transition-all blue-glow flex items-center gap-2 text-sm font-medium">
+                <i class="fa-solid fa-arrows-rotate" id="refresh-icon"></i>
+                <span class="hidden sm:inline">Atualizar</span>
+            </button>
+        </div>
+    </header>
+
+    <!-- Conteúdo Principal -->
+    <main class="p-6 max-w-[1600px] w-full mx-auto space-y-6 flex-grow">
+
+        <!-- Métricas Rápidas (Cards Operational KPI) -->
+        <section class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            
+            <!-- Card 1: Nível de Serviço -->
+            <div class="glass-card p-4 rounded-xl transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Nível de Serviço (NS)</span>
+                    <div class="p-2 bg-brand-600/20 text-brand-400 rounded-lg">
+                        <i class="fa-solid fa-chart-line"></i>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-bold text-white">88.4%</span>
+                    <span class="text-xs text-emerald-400 font-medium"><i class="fa-solid fa-arrow-up"></i> +2.1%</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Meta: 85.0% em 20s</p>
+                <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
+                    <div class="bg-brand-500 h-full rounded-full" style="width: 88.4%"></div>
+                </div>
+            </div>
+
+            <!-- Card 2: Chamadas Atendidas -->
+            <div class="glass-card p-4 rounded-xl transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Atendidas</span>
+                    <div class="p-2 bg-blue-600/20 text-blue-400 rounded-lg">
+                        <i class="fa-solid fa-phone-volume"></i>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-bold text-white">1,420</span>
+                    <span class="text-xs text-emerald-400 font-medium"><i class="fa-solid fa-arrow-up"></i> +5.4%</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Total acumulado do dia</p>
+                <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
+                    <div class="bg-blue-500 h-full rounded-full" style="width: 75%"></div>
+                </div>
+            </div>
+
+            <!-- Card 3: Chamadas em Espera -->
+            <div class="glass-card p-4 rounded-xl transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Em Espera</span>
+                    <div class="p-2 bg-amber-500/20 text-amber-400 rounded-lg">
+                        <i class="fa-solid fa-users-viewfinder"></i>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-bold text-amber-400">12</span>
+                    <span class="text-xs text-amber-400 font-medium"><i class="fa-solid fa-minus"></i> Estável</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Fila máxima em 5m: 18</p>
+                <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
+                    <div class="bg-amber-500 h-full rounded-full" style="width: 40%"></div>
+                </div>
+            </div>
+
+            <!-- Card 4: Tempo Médio de Espera (TME) -->
+            <div class="glass-card p-4 rounded-xl transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">TME Médio</span>
+                    <div class="p-2 bg-indigo-600/20 text-indigo-400 rounded-lg">
+                        <i class="fa-regular fa-clock"></i>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-bold text-white">00:14</span>
+                    <span class="text-xs text-emerald-400 font-medium"><i class="fa-solid fa-arrow-down"></i> -3s</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Meta: &lt; 00:20s</p>
+                <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
+                    <div class="bg-indigo-500 h-full rounded-full" style="width: 35%"></div>
+                </div>
+            </div>
+
+            <!-- Card 5: Tempo Médio de Atendimento (TMA) -->
+            <div class="glass-card p-4 rounded-xl transition-all">
+                <div class="flex justify-between items-start mb-2">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">TMA Médio</span>
+                    <div class="p-2 bg-sky-600/20 text-sky-400 rounded-lg">
+                        <i class="fa-solid fa-stopwatch"></i>
+                    </div>
+                </div>
+                <div class="flex items-baseline gap-2">
+                    <span class="text-2xl font-bold text-white">04:25</span>
+                    <span class="text-xs text-rose-400 font-medium"><i class="fa-solid fa-arrow-up"></i> +12s</span>
+                </div>
+                <p class="text-[11px] text-slate-400 mt-1">Meta: 04:30s</p>
+                <div class="w-full bg-slate-800 h-1.5 rounded-full mt-3 overflow-hidden">
+                    <div class="bg-sky-500 h-full rounded-full" style="width: 65%"></div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Seção do Gráfico e Resumo de Células -->
+        <section class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <!-- Gráfico de Volume Hora a Hora (2 Colunas) -->
+            <div class="glass-card p-5 rounded-xl lg:col-span-2">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h2 class="text-base font-semibold text-white">Volume de Chamadas x Atendimento</h2>
+                        <p class="text-xs text-slate-400">Comparativo intraday por hora operada</p>
+                    </div>
+                    <span class="text-xs bg-brand-900/60 text-brand-300 border border-brand-500/30 px-3 py-1 rounded-full">
+                        Hoje
+                    </span>
+                </div>
+                <div class="h-64 relative">
+                    <canvas id="callsChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Resumo das Equipes/Filas -->
+            <div class="glass-card p-5 rounded-xl flex flex-col justify-between">
+                <div>
+                    <h2 class="text-base font-semibold text-white mb-1">Status das Filas</h2>
+                    <p class="text-xs text-slate-400 mb-4">Distribuição atual dos atendimentos</p>
+
+                    <div class="space-y-4">
+                        <!-- Fila 1 -->
+                        <div>
+                            <div class="flex justify-between text-xs font-medium mb-1">
+                                <span class="text-slate-300"><i class="fa-solid fa-headset text-brand-400 mr-1.5"></i>Suporte Técnico</span>
+                                <span class="text-brand-400 font-bold">24 Ativos / 3 Espera</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                <div class="bg-brand-500 h-full rounded-full" style="width: 80%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Fila 2 -->
+                        <div>
+                            <div class="flex justify-between text-xs font-medium mb-1">
+                                <span class="text-slate-300"><i class="fa-solid fa-credit-card text-brand-400 mr-1.5"></i>Financeiro & Cobrança</span>
+                                <span class="text-brand-400 font-bold">18 Ativos / 7 Espera</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                <div class="bg-indigo-500 h-full rounded-full" style="width: 65%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Fila 3 -->
+                        <div>
+                            <div class="flex justify-between text-xs font-medium mb-1">
+                                <span class="text-slate-300"><i class="fa-solid fa-cart-shopping text-brand-400 mr-1.5"></i>Vendas & Retenção</span>
+                                <span class="text-brand-400 font-bold">30 Ativos / 2 Espera</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                <div class="bg-sky-400 h-full rounded-full" style="width: 90%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Fila 4 -->
+                        <div>
+                            <div class="flex justify-between text-xs font-medium mb-1">
+                                <span class="text-slate-300"><i class="fa-solid fa-circle-info text-brand-400 mr-1.5"></i>SAC / Geral</span>
+                                <span class="text-brand-400 font-bold">15 Ativos / 0 Espera</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                <div class="bg-emerald-400 h-full rounded-full" style="width: 45%"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumo Quantitativo Geral -->
+                <div class="mt-6 pt-4 border-t border-slate-800 grid grid-cols-3 gap-2 text-center">
+                    <div class="bg-slate-900/50 p-2 rounded-lg border border-slate-800">
+                        <div class="text-[10px] uppercase text-slate-400">Logados</div>
+                        <div class="text-lg font-bold text-white">87</div>
+                    </div>
+                    <div class="bg-slate-900/50 p-2 rounded-lg border border-slate-800">
+                        <div class="text-[10px] uppercase text-slate-400">Em Pausa</div>
+                        <div class="text-lg font-bold text-amber-400">12</div>
+                    </div>
+                    <div class="bg-slate-900/50 p-2 rounded-lg border border-slate-800">
+                        <div class="text-[10px] uppercase text-slate-400">Disponíveis</div>
+                        <div class="text-lg font-bold text-emerald-400">14</div>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- Tabela de Monitoramento da Escala Operacional -->
+        <section class="glass-card rounded-xl p-5 overflow-hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-4">
+                <div>
+                    <h2 class="text-base font-semibold text-white">Monitor de Operadores (Escala em Tempo Real)</h2>
+                    <p class="text-xs text-slate-400">Acompanhamento de status individual e aderência</p>
+                </div>
+                <!-- Busca e Filtros -->
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                    <div class="relative w-full sm:w-64">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3 top-1/2 -translate-y-1/2 text-slate-500 text-xs"></i>
+                        <input type="text" id="searchInput" onkeyup="filterTable()" placeholder="Buscar operador ou fila..." class="w-full bg-slate-900/80 border border-slate-700/60 rounded-lg pl-8 pr-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-brand-500">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabela Estilizada -->
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-xs text-slate-300" id="agentTable">
+                    <thead class="bg-slate-900/80 text-slate-400 uppercase text-[10px] tracking-wider border-b border-slate-800">
+                        <tr>
+                            <th class="py-3 px-4 font-semibold">Operador</th>
+                            <th class="py-3 px-4 font-semibold">Fila / Equipe</th>
+                            <th class="py-3 px-4 font-semibold">Status Atual</th>
+                            <th class="py-3 px-4 font-semibold">Tempo no Status</th>
+                            <th class="py-3 px-4 font-semibold">Atendimentos</th>
+                            <th class="py-3 px-4 font-semibold text-right">Aderência</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-800/60">
+                        
+                        <tr class="hover:bg-brand-950/30 transition-colors">
+                            <td class="py-3 px-4 font-medium text-white flex items-center gap-2.5">
+                                <div class="w-7 h-7 rounded-full bg-brand-600/30 text-brand-400 border border-brand-500/40 flex items-center justify-center text-xs font-bold">
+                                    CS
+                                </div>
+                                Carlos Silva
+                            </td>
+                            <td class="py-3 px-4">Suporte Técnico</td>
+                            <td class="py-3 px-4">
+                                <span class="bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-medium inline-flex items-center gap-1.5">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Em Chamada
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 font-mono">00:03:42</td>
+                            <td class="py-3 px-4">34</td>
+                            <td class="py-3 px-4 text-right font-medium text-emerald-400">98%</td>
+                        </tr>
+
+                        <tr class="hover:bg-brand-950/30 transition-colors">
+                            <td class="py-3 px-4 font-medium text-white flex items-center gap-2.5">
+                                <div class="w-7 h-7 rounded-full bg-brand-600/30 text-brand-400 border border-brand-500/40 flex items-center justify-center text-xs font-bold">
+                                    AM
+                                </div>
+                                Ana Maria
+                            </td>
+                            <td class="py-3 px-4">Financeiro</td>
+                            <td class="py-3 px-4">
+                                <span class="bg-blue-950/60 text-blue-400 border border-blue-500/30 px-2.5 py-1 rounded-full text-[11px] font-medium inline-flex items-center gap-1.5">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span> Disponível
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 font-mono">00:00:15</td>
+                            <td class="py-3 px-4">28</td>
+                            <td class="py-3 px-4 text-right font-medium text-emerald-400">95%</td>
+                        </tr>
+
+                        <tr class="hover:bg-brand-950/30 transition-colors">
+                            <td class="py-3 px-4 font-medium text-white flex items-center gap-2.5">
+                                <div class="w-7 h-7 rounded-full bg-brand-600/30 text-brand-400 border border-brand-500/40 flex items-center justify-center text-xs font-bold">
+                                    RL
+                                </div>
+                                Roberto Lima
+                            </td>
+                            <td class="py-3 px-4">Vendas & Retenção</td>
+                            <td class="py-3 px-4">
+                                <span class="bg-amber-950/60 text-amber-400 border border-amber-500/30 px-2.5 py-1 rounded-full text-[11px] font-medium inline-flex items-center gap-1.5">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Pausa NR17
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 font-mono text-amber-400">00:08:10</td>
+                            <td class="py-3 px-4">22</td>
+                            <td class="py-3 px-4 text-right font-medium text-amber-400">91%</td>
+                        </tr>
+
+                        <tr class="hover:bg-brand-950/30 transition-colors">
+                            <td class="py-3 px-4 font-medium text-white flex items-center gap-2.5">
+                                <div class="w-7 h-7 rounded-full bg-brand-600/30 text-brand-400 border border-brand-500/40 flex items-center justify-center text-xs font-bold">
+                                    FB
+                                </div>
+                                Fernanda Beatriz
+                            </td>
+                            <td class="py-3 px-4">SAC / Geral</td>
+                            <td class="py-3 px-4">
+                                <span class="bg-emerald-950/60 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full text-[11px] font-medium inline-flex items-center gap-1.5">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span> Em Chamada
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 font-mono">00:01:20</td>
+                            <td class="py-3 px-4">41</td>
+                            <td class="py-3 px-4 text-right font-medium text-emerald-400">99%</td>
+                        </tr>
+
+                        <tr class="hover:bg-brand-950/30 transition-colors">
+                            <td class="py-3 px-4 font-medium text-white flex items-center gap-2.5">
+                                <div class="w-7 h-7 rounded-full bg-brand-600/30 text-brand-400 border border-brand-500/40 flex items-center justify-center text-xs font-bold">
+                                    GS
+                                </div>
+                                Gabriel Santos
+                            </td>
+                            <td class="py-3 px-4">Suporte Técnico</td>
+                            <td class="py-3 px-4">
+                                <span class="bg-rose-950/60 text-rose-400 border border-rose-500/30 px-2.5 py-1 rounded-full text-[11px] font-medium inline-flex items-center gap-1.5">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> Feedback/Treinamento
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 font-mono text-rose-400">00:22:15</td>
+                            <td class="py-3 px-4">19</td>
+                            <td class="py-3 px-4 text-right font-medium text-rose-400">84%</td>
+                        </tr>
+
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Rodapé -->
+    <footer class="glass-card border-t border-brand-600/20 px-6 py-3 text-center text-xs text-slate-500">
+        Control Desk &copy; 2026 - Sistema de Gestão Operacional e Call Center
+    </footer>
+
+    <!-- Lógica de relógio, gráficos e simulação em JS -->
+    <script>
+        // Relógio digital em tempo real
+        function updateClock() {
+            const now = new Date();
+            const hours = String(now.getHours()).padStart(2, '0');
+            const minutes = String(now.getMinutes()).padStart(2, '0');
+            const seconds = String(now.getSeconds()).padStart(2, '0');
+            document.getElementById('live-clock').textContent = `${hours}:${minutes}:${seconds}`;
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
+
+        // Animação no botão de recarregar
+        function refreshData() {
+            const icon = document.getElementById('refresh-icon');
+            icon.classList.add('fa-spin');
+            setTimeout(() => {
+                icon.classList.remove('fa-spin');
+            }, 800);
+        }
+
+        // Filtro simples da tabela
+        function filterTable() {
+            const input = document.getElementById('searchInput');
+            const filter = input.value.toLowerCase();
+            const table = document.getElementById('agentTable');
+            const tr = table.getElementsByTagName('tr');
+
+            for (let i = 1; i < tr.length; i++) {
+                let text = tr[i].textContent || tr[i].innerText;
+                if (text.toLowerCase().indexOf(filter) > -1) {
+                    tr[i].style.display = "";
+                } else {
+                    tr[i].style.display = "none";
+                }
+            }
+        }
+
+        // Gráfico Chart.js com o Tema Azul do Control Desk
+        window.onload = function() {
+            const ctx = document.getElementById('callsChart').getContext('2d');
+            
+            // Gradiente azul para o gráfico
+            const gradientReceived = ctx.createLinearGradient(0, 0, 0, 300);
+            gradientReceived.addColorStop(0, 'rgba(37, 99, 235, 0.4)');
+            gradientReceived.addColorStop(1, 'rgba(37, 99, 235, 0.0)');
+
+            const gradientAnswered = ctx.createLinearGradient(0, 0, 0, 300);
+            gradientAnswered.addColorStop(0, 'rgba(56, 189, 248, 0.4)');
+            gradientAnswered.addColorStop(1, 'rgba(56, 189, 248, 0.0)');
+
+            new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['08:00', '09:00', '10:00', '11:00', '12:00', '13:00', '14:00', '15:00', '16:00'],
+                    datasets: [
+                        {
+                            label: 'Recebidas',
+                            data: [110, 180, 240, 310, 280, 220, 290, 350, 210],
+                            borderColor: '#2563eb',
+                            backgroundColor: gradientReceived,
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2,
+                            pointBackgroundColor: '#2563eb'
+                        },
+                        {
+                            label: 'Atendidas',
+                            data: [105, 172, 230, 295, 270, 210, 280, 335, 200],
+                            borderColor: '#38bdf8',
+                            backgroundColor: gradientAnswered,
+                            fill: true,
+                            tension: 0.4,
+                            borderWidth: 2,
+                            pointBackgroundColor: '#38bdf8'
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#94a3b8',
+                                font: { family: 'Inter', size: 11 }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#64748b', font: { size: 10 } }
+                        },
+                        y: {
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                            ticks: { color: '#64748b', font: { size: 10 } }
+                        }
+                    }
+                }
+            });
+        };
+    </script>
+</body>
+</html>
